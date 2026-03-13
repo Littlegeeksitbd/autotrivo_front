@@ -363,7 +363,7 @@ function RegForm({ onSuccess }) {
     try {
 
       await axios.post(
-          `${baseUrl}/api/register`,
+          `${baseUrl}/api/auth/register`,
           {
             name: fields.name,
             email: fields.email,

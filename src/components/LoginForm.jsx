@@ -21,7 +21,7 @@ function LoginForm() {
 
         try {
             const res = await axios.post(
-                `${baseUrl}/api/login`,
+                `${baseUrl}/api/auth/login`,
                 {
                     email: fields.email,
                     password: fields.password

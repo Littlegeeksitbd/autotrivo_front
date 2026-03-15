@@ -1,4 +1,6 @@
 import React, {useState} from 'react';
+import axios from "axios";
+import {baseUrl,redirectUrl} from "../config.js";
 
 function RegForm({ onSuccess }) {
     const [fields,    setFields]    = useState({ name:"", email:"", phone:"", password:"", confirm:"" });
@@ -49,7 +51,7 @@ function RegForm({ onSuccess }) {
 
         try {
 
-            await axios.post(
+            const res = await axios.post(
                 `${baseUrl}/api/auth/register`,
                 {
                     name: fields.name,
@@ -62,8 +64,18 @@ function RegForm({ onSuccess }) {
 
             onSuccess?.();
 
-        } catch (error) {
+            const { token, user } = res.data;
 
+            // Save to localStorage
+            localStorage.setItem("token", token);
+            localStorage.setItem("user", JSON.stringify(user));
+
+            // Redirect to Next.js domain
+            window.location.href = `${redirectUrl}/auth/sso-login?token=${token}`;
+
+
+        } catch (error) {
+            console.log(error)
             setErrors({
                 email: error.response?.data?.message || "Registration failed"
             });

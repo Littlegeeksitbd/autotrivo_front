@@ -1,6 +1,9 @@
 import { useState, useEffect, useRef } from "react";
 import "./index.css";
-
+import axios from "axios";
+import {baseUrl} from "./config.js"
+import LoginForm from "./components/LoginForm.jsx";
+import RegForm from "./components/RegForm.jsx";
 /* ================================================================
    DATA
 ================================================================ */
@@ -316,255 +319,7 @@ function recordFailedAttempt() {
 function resetAttempts() { attemptStore.count = 0; attemptStore.lockedUntil = 0; }
 
 /* ── LOGIN FORM ── */
-function LoginForm({ onSuccess }) {
-  const [fields,   setFields]   = useState({ email: "", password: "" });
-  const [errors,   setErrors]   = useState({});
-  const [showPass, setShowPass] = useState(false);
-  const [remember, setRemember] = useState(false);
-  const [loading,  setLoading]  = useState(false);
-  const [lockMsg,  setLockMsg]  = useState("");
 
-  const set = (k, v) => {
-    setFields(f => ({ ...f, [k]: sanitize(v) }));
-    setErrors(e => ({ ...e, [k]: "" }));
-    setLockMsg("");
-  };
-
-  const validate = () => {
-    const errs = {};
-    if (!fields.email)                errs.email    = "Email is required";
-    else if (!isValidEmail(fields.email)) errs.email = "Enter a valid email address";
-    if (!fields.password)             errs.password = "Password is required";
-    else if (fields.password.length < 6) errs.password = "Password must be at least 6 characters";
-    return errs;
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (isLocked()) {
-      const secs = Math.ceil((attemptStore.lockedUntil - Date.now()) / 1000);
-      setLockMsg(`Too many attempts. Try again in ${secs}s.`);
-      return;
-    }
-    const errs = validate();
-    if (Object.keys(errs).length) { setErrors(errs); return; }
-
-    setLoading(true);
-    /* Simulate API call — replace with real endpoint */
-    await new Promise(r => setTimeout(r, 900));
-    setLoading(false);
-
-    /* Demo: wrong credentials → record failed attempt */
-    const demoFail = true; // set false when real API connected
-    if (demoFail) {
-      recordFailedAttempt();
-      setErrors({ password: "Invalid email or password" });
-    } else {
-      resetAttempts();
-      onSuccess?.();
-    }
-  };
-
-  return (
-    <form id="login-form" className="auth-form" onSubmit={handleSubmit} noValidate autoComplete="off">
-      {/* Email */}
-      <div className="auth-field">
-        <label className="auth-label" htmlFor="login-email">Email</label>
-        <div className={`auth-input-wrap${errors.email ? " auth-input-wrap--err" : ""}`}>
-          <span className="auth-input-icon">✉</span>
-          <input
-            id="login-email"
-            className="auth-input"
-            type="email"
-            placeholder="Enter your email"
-            value={fields.email}
-            onChange={e => set("email", e.target.value)}
-            maxLength={120}
-            autoComplete="email"
-            aria-describedby={errors.email ? "login-email-err" : undefined}
-          />
-        </div>
-        {errors.email && <p id="login-email-err" className="auth-error" role="alert">⚠ {errors.email}</p>}
-      </div>
-
-      {/* Password */}
-      <div className="auth-field">
-        <label className="auth-label" htmlFor="login-pass">Password</label>
-        <div className={`auth-input-wrap${errors.password ? " auth-input-wrap--err" : ""}`}>
-          <span className="auth-input-icon">🔒</span>
-          <input
-            id="login-pass"
-            className="auth-input"
-            type={showPass ? "text" : "password"}
-            placeholder="Enter your password"
-            value={fields.password}
-            onChange={e => set("password", e.target.value)}
-            maxLength={128}
-            autoComplete="current-password"
-            aria-describedby={errors.password ? "login-pass-err" : undefined}
-          />
-          <button type="button" className="auth-eye" onClick={() => setShowPass(s => !s)}
-            aria-label={showPass ? "Hide password" : "Show password"}>
-            {showPass ? "🙈" : "👁"}
-          </button>
-        </div>
-        {errors.password && <p id="login-pass-err" className="auth-error" role="alert">⚠ {errors.password}</p>}
-      </div>
-
-      {/* Remember + Forgot */}
-      <div className="auth-row">
-        <label className="auth-check">
-          <input type="checkbox" checked={remember} onChange={e => setRemember(e.target.checked)} />
-          <span>Remember me</span>
-        </label>
-        <button type="button" className="auth-forgot">Forgot password?</button>
-      </div>
-
-      {lockMsg && <p className="auth-error auth-error--lock" role="alert">🔒 {lockMsg}</p>}
-
-      <button type="submit" className="auth-submit" disabled={loading} aria-busy={loading}>
-        {loading ? <span className="auth-spinner" /> : "Login"}
-      </button>
-    </form>
-  );
-}
-
-/* ── REGISTRATION FORM ── */
-function RegForm({ onSuccess }) {
-  const [fields,    setFields]    = useState({ name:"", email:"", phone:"", password:"", confirm:"" });
-  const [errors,    setErrors]    = useState({});
-  const [showPass,  setShowPass]  = useState(false);
-  const [showConf,  setShowConf]  = useState(false);
-  const [agreed,    setAgreed]    = useState(false);
-  const [loading,   setLoading]   = useState(false);
-
-  const set = (k, v) => {
-    setFields(f => ({ ...f, [k]: sanitize(v) }));
-    setErrors(e => ({ ...e, [k]: "" }));
-  };
-
-  const validate = () => {
-    const errs = {};
-    if (!fields.name)                     errs.name     = "Full name is required";
-    else if (!isValidName(fields.name))   errs.name     = "Name contains invalid characters";
-    if (!fields.email)                    errs.email    = "Email is required";
-    else if (!isValidEmail(fields.email)) errs.email    = "Enter a valid email address";
-    if (!fields.phone)                    errs.phone    = "Phone number is required";
-    else if (!isValidPhone(fields.phone)) errs.phone    = "Enter a valid phone number";
-    if (!fields.password)                 errs.password = "Password is required";
-    else if (!isStrongPass(fields.password)) errs.password = "Min 8 chars, 1 uppercase, 1 number";
-    if (!fields.confirm)                  errs.confirm  = "Please confirm your password";
-    else if (fields.confirm !== fields.password) errs.confirm = "Passwords do not match";
-    if (!agreed)                          errs.agreed   = "You must agree to the Terms & Conditions";
-    return errs;
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    const errs = validate();
-    if (Object.keys(errs).length) { setErrors(errs); return; }
-
-    setLoading(true);
-    await new Promise(r => setTimeout(r, 1000));
-    setLoading(false);
-    onSuccess?.();
-  };
-
-  return (
-    <form id="reg-form" className="auth-form" onSubmit={handleSubmit} noValidate autoComplete="off">
-      {/* Full Name */}
-      <div className="auth-field">
-        <label className="auth-label" htmlFor="reg-name">Full Name</label>
-        <div className={`auth-input-wrap${errors.name ? " auth-input-wrap--err" : ""}`}>
-          <span className="auth-input-icon">👤</span>
-          <input id="reg-name" className="auth-input" type="text"
-            placeholder="Enter your full name"
-            value={fields.name} onChange={e => set("name", e.target.value)}
-            maxLength={80} autoComplete="name" />
-        </div>
-        {errors.name && <p className="auth-error" role="alert">⚠ {errors.name}</p>}
-      </div>
-
-      {/* Email */}
-      <div className="auth-field">
-        <label className="auth-label" htmlFor="reg-email">Email</label>
-        <div className={`auth-input-wrap${errors.email ? " auth-input-wrap--err" : ""}`}>
-          <span className="auth-input-icon">✉</span>
-          <input id="reg-email" className="auth-input" type="email"
-            placeholder="Enter your email"
-            value={fields.email} onChange={e => set("email", e.target.value)}
-            maxLength={120} autoComplete="email" />
-        </div>
-        {errors.email && <p className="auth-error" role="alert">⚠ {errors.email}</p>}
-      </div>
-
-      {/* Phone */}
-      <div className="auth-field">
-        <label className="auth-label" htmlFor="reg-phone">Phone Number</label>
-        <div className={`auth-input-wrap${errors.phone ? " auth-input-wrap--err" : ""}`}>
-          <span className="auth-input-icon">📞</span>
-          <input id="reg-phone" className="auth-input" type="tel"
-            placeholder="Enter your phone number"
-            value={fields.phone} onChange={e => set("phone", e.target.value)}
-            maxLength={20} autoComplete="tel" />
-        </div>
-        {errors.phone && <p className="auth-error" role="alert">⚠ {errors.phone}</p>}
-      </div>
-
-      {/* Password */}
-      <div className="auth-field">
-        <label className="auth-label" htmlFor="reg-pass">Password</label>
-        <div className={`auth-input-wrap${errors.password ? " auth-input-wrap--err" : ""}`}>
-          <span className="auth-input-icon">🔒</span>
-          <input id="reg-pass" className="auth-input"
-            type={showPass ? "text" : "password"}
-            placeholder="Create a password"
-            value={fields.password} onChange={e => set("password", e.target.value)}
-            maxLength={128} autoComplete="new-password" />
-          <button type="button" className="auth-eye" onClick={() => setShowPass(s => !s)}
-            aria-label={showPass ? "Hide password" : "Show password"}>
-            {showPass ? "🙈" : "👁"}
-          </button>
-        </div>
-        {errors.password && <p className="auth-error" role="alert">⚠ {errors.password}</p>}
-      </div>
-
-      {/* Confirm Password */}
-      <div className="auth-field">
-        <label className="auth-label" htmlFor="reg-confirm">Confirm Password</label>
-        <div className={`auth-input-wrap${errors.confirm ? " auth-input-wrap--err" : ""}`}>
-          <span className="auth-input-icon">🔒</span>
-          <input id="reg-confirm" className="auth-input"
-            type={showConf ? "text" : "password"}
-            placeholder="Confirm your password"
-            value={fields.confirm} onChange={e => set("confirm", e.target.value)}
-            maxLength={128} autoComplete="new-password" />
-          <button type="button" className="auth-eye" onClick={() => setShowConf(s => !s)}
-            aria-label={showConf ? "Hide confirm password" : "Show confirm password"}>
-            {showConf ? "🙈" : "👁"}
-          </button>
-        </div>
-        {errors.confirm && <p className="auth-error" role="alert">⚠ {errors.confirm}</p>}
-      </div>
-
-      {/* Terms */}
-      <div className="auth-field">
-        <label className={`auth-check${errors.agreed ? " auth-check--err" : ""}`}>
-          <input type="checkbox" checked={agreed} onChange={e => {
-            setAgreed(e.target.checked);
-            setErrors(er => ({ ...er, agreed: "" }));
-          }} />
-          <span>I agree to the <button type="button" className="auth-forgot">Terms &amp; Conditions</button> and <button type="button" className="auth-forgot">Privacy Policy</button></span>
-        </label>
-        {errors.agreed && <p className="auth-error" role="alert">⚠ {errors.agreed}</p>}
-      </div>
-
-      <button type="submit" className="auth-submit" disabled={loading} aria-busy={loading}>
-        {loading ? <span className="auth-spinner" /> : "Create Account"}
-      </button>
-    </form>
-  );
-}
 
 /* ── MAIN MODAL WRAPPER ── */
 function AuthModal({ open, onClose, defaultTab = "login" }) {
@@ -732,10 +487,11 @@ export default function App() {
           onClick={()=>window.scrollTo({top:0,behavior:"smooth"})}
           role="button" tabIndex={0}
           onKeyDown={e=>e.key==="Enter"&&window.scrollTo({top:0,behavior:"smooth"})}>
-          <div className="navbar__logo-icon">🎰</div>
+
           <span className="navbar__logo-text">
-            <span className="navbar__logo-brand">b2clive</span>
-            <span className="navbar__logo-domain">.shop</span>
+            <span className="navbar__logo-brand" >
+               <img src="logo.png" style={{width: '200px', height: 'auto', marginTop: '20px'}}/>
+            </span>
           </span>
         </div>
 

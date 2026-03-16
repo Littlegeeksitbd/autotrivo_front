@@ -54,9 +54,7 @@ function RegForm({ onSuccess }) {
             const res = await axios.post(
                 `${baseUrl}/api/auth/register`,
                 {
-                    name: fields.name,
-                    email: fields.email,
-                    password: fields.password
+                   ...fields
                 }
             );
 

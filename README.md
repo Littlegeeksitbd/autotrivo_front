@@ -1,4 +1,4 @@
-# b2clive.shop — React Clone
+# Autotrivo — React C
 
 ## 🚀 Setup & Run
 
@@ -10,7 +10,7 @@
 
 ```bash
 # 1. Project folder এ যাও
-cd b2clive-clone
+cd autotirvo-clone
 
 # 2. Dependencies install করো
 npm install

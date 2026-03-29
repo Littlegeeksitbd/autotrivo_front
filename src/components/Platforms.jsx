@@ -40,7 +40,6 @@ const Platforms = ({openAuth}) => {
                         subtitle="Explore our complete collection of premium casino and betting platforms — each one built for performance and reliability."
                     />
                     <div className="platforms__grid">
-                        {JSON.stringify(platforms)}
                         {platforms.map((p,i)=>(
                             <article key={i} className="platform-card" id={`platform-${p.name.toLowerCase().replace(/\s+/g,"-")}`}>
                                 <div className="platform-card__header">
